@@ -5,6 +5,7 @@ import logging
 import telnetlib
 import voluptuous as vol
 
+from datetime import timedelta, datetime
 import time
 import queue
 import re
@@ -23,9 +24,11 @@ import homeassistant.helpers.config_validation as cv
 
 class mylogger():
     def debug(self, format, *args):
-        print(format % args)
+        print('DEBUG:'+format % args)
     def warning(self, format, *args):
-        print(format % args)
+        print('WARNING: '+format % args)
+    def error(self, format, *args):
+        print('ERROR: '+format % args)
 
 if __name__ == '__main__':
     _LOGGER = mylogger()
@@ -34,8 +37,9 @@ else:
 
 DEFAULT_NAME = 'pioneer'
 DEFAULT_PORT = 8102
-DEFAULT_TIMEOUT = None
+DEFAULT_TIMEOUT = 1
 ANSWER_TIMEOUT = 0.2
+SCAN_INTERVAL = timedelta(seconds=15)
 
 SUPPORT_PIONEER = SUPPORT_PAUSE | SUPPORT_VOLUME_STEP | SUPPORT_VOLUME_MUTE | \
                   SUPPORT_TURN_ON | SUPPORT_TURN_OFF | SUPPORT_SELECT_SOUND_MODE | \
@@ -59,9 +63,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         config.get(CONF_HOST),
         config.get(CONF_PORT),
         config.get(CONF_TIMEOUT))
-
-    if pioneer.update():
-        add_entities([pioneer])
+    add_entities([pioneer])
 
 class PioneerDevice(MediaPlayerDevice):
 
@@ -83,6 +85,7 @@ class PioneerDevice(MediaPlayerDevice):
         self._media_title = None
         self._media_artist = None
         self._sound_mode_list = None
+        self._last_update = datetime.now()
 
     def queue_command(self, command):
 #        _LOGGER.debug('queue_command %s', command)
@@ -90,6 +93,7 @@ class PioneerDevice(MediaPlayerDevice):
 
     def telnet_command(self, telnet, command):
 #        _LOGGER.debug('telnet_command %s', command)
+        timestamp('telnet_command begin: '+command)
         num_lines = 0
         gcp_type = None
         gep_type = None
@@ -161,13 +165,20 @@ class PioneerDevice(MediaPlayerDevice):
                     _LOGGER.debug('Found unknown answer: %s', line)
         except telnetlib.socket.timeout:
             _LOGGER.debug('Pioneer %s command %s timed out', self._name, command)
+        timestamp('telnet_command end: '+command)
 
     def update(self):
 #        _LOGGER.debug('update')
+        timestamp('update begin')
+        now = datetime.now()
+        if now - self._last_update < timedelta(seconds=ANSWER_TIMEOUT):
+            time.sleep(ANSWER_TIMEOUT)
+
         try:
             telnet = telnetlib.Telnet(self._host, self._port, self._timeout)
         except (ConnectionRefusedError, OSError):
             _LOGGER.warning('update: Pioneer %s refused connection', self._name)
+            timestamp('update refused connection')
             return False
 
         try:
@@ -189,6 +200,9 @@ class PioneerDevice(MediaPlayerDevice):
 
         telnet.close()
 #        _LOGGER.debug('update end')
+        timestamp('update end')
+        self._last_update = datetime.now()
+
         return True
 
     @property
