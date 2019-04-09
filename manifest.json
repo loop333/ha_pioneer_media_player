@@ -1,0 +1,8 @@
+{
+  "domain": "pioneer",
+  "name": "pioneer",
+  "documentation": "https://github.com/loop333/ha_pioneer_media_player",
+  "requirements": [],
+  "dependencies": [],
+  "codeowners": []
+}
