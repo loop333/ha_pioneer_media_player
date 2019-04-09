@@ -93,7 +93,6 @@ class PioneerDevice(MediaPlayerDevice):
 
     def telnet_command(self, telnet, command):
 #        _LOGGER.debug('telnet_command %s', command)
-        timestamp('telnet_command begin: '+command)
         num_lines = 0
         gcp_type = None
         gep_type = None
@@ -165,11 +164,9 @@ class PioneerDevice(MediaPlayerDevice):
                     _LOGGER.debug('Found unknown answer: %s', line)
         except telnetlib.socket.timeout:
             _LOGGER.debug('Pioneer %s command %s timed out', self._name, command)
-        timestamp('telnet_command end: '+command)
 
     def update(self):
 #        _LOGGER.debug('update')
-        timestamp('update begin')
         now = datetime.now()
         if now - self._last_update < timedelta(seconds=ANSWER_TIMEOUT):
             time.sleep(ANSWER_TIMEOUT)
@@ -178,14 +175,12 @@ class PioneerDevice(MediaPlayerDevice):
             telnet = telnetlib.Telnet(self._host, self._port, self._timeout)
         except (ConnectionRefusedError, OSError):
             _LOGGER.warning('update: Pioneer %s refused connection', self._name)
-            timestamp('update refused connection')
             return False
 
         try:
             while True:
                 cmd = self._cmd_queue.get_nowait()
                 self.telnet_command(telnet, cmd)
-#                time.sleep(ANSWER_TIMEOUT)
         except queue.Empty:
             pass
 
@@ -199,9 +194,8 @@ class PioneerDevice(MediaPlayerDevice):
             self.telnet_command(telnet, '?GIA0000199999')
 
         telnet.close()
-#        _LOGGER.debug('update end')
-        timestamp('update end')
         self._last_update = datetime.now()
+#        _LOGGER.debug('update end')
 
         return True
 
