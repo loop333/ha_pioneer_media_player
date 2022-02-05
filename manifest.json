@@ -1,6 +1,7 @@
 {
   "domain": "pioneer",
   "name": "pioneer",
+  "version": "0.0.1",
   "documentation": "https://github.com/loop333/ha_pioneer_media_player",
   "requirements": [],
   "dependencies": [],
