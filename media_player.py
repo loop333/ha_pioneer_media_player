@@ -77,7 +77,7 @@ class PioneerDevice(MediaPlayerEntity):
         self._volume = 0
         self._muted = False
         self._selected_source = None
-        self._source_number_to_name = {'02': 'Tuner', '45': 'Favorites', '38': 'Internet Radio'}
+        self._source_number_to_name = {'01': 'CD', '02': 'Tuner', '38': 'Internet Radio', '45': 'Favorites', '46': 'AirPlay'}
         self._source_name_to_number = {v: k for k, v in self._source_number_to_name.items()}
         self._cmd_queue = queue.Queue()
         self._image_url = None
@@ -188,7 +188,7 @@ class PioneerDevice(MediaPlayerEntity):
         self.telnet_command(telnet, '?V')
         self.telnet_command(telnet, '?M')
         self.telnet_command(telnet, '?F')
-        if self._selected_source in ['Favorites', 'Internet Radio']:
+        if self._selected_source in ['Favorites', 'Internet Radio', 'AirPlay']:
             self.telnet_command(telnet, '?GAP')
             self.telnet_command(telnet, '?GIC')
             self.telnet_command(telnet, '?GIA0000199999')
@@ -211,10 +211,10 @@ class PioneerDevice(MediaPlayerEntity):
             return STATE_OFF
         if self._selected_source == 'Tuner':
             return STATE_PLAYING
-        if self._selected_source in ['Favorites', 'Internet Radio']:
+        if self._selected_source in ['Favorites', 'Internet Radio', 'AirPlay']:
             return self._state
 
-        return STATE_UNKNOWN
+        return STATE_PAUSED
 
     @property
     def volume_level(self):
@@ -300,7 +300,7 @@ class PioneerDevice(MediaPlayerEntity):
 
     def select_source(self, source):
         _LOGGER.debug('select_source %s', source)
-        self.queue_command(self._source_name_to_number.get(source) + 'FN')
+        self.queue_command(self._source_name_to_number.get(source, '02') + 'FN')
         self.schedule_update_ha_state()
 
     def select_sound_mode(self, sound_mode):
